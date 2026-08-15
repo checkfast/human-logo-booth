@@ -2,14 +2,22 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>Human Logo Booth</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       margin: 0;
-      padding: 0;
       width: 100%;
       min-height: 100%;
       font-family: Arial, sans-serif;
@@ -23,20 +31,19 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-sizing: border-box;
       padding: 30px;
     }
 
     h1 {
-      margin: 0 0 10px 0;
+      margin: 0 0 10px;
       font-size: 38px;
       text-align: center;
     }
 
-    p {
-      margin: 0 0 25px 0;
+    #instruction {
+      margin: 0 0 25px;
       font-size: 20px;
-      opacity: 0.8;
+      opacity: .85;
       text-align: center;
     }
 
@@ -68,13 +75,12 @@
       position: absolute;
       width: 42%;
       aspect-ratio: 1 / 1;
-      border: 4px solid rgba(255,255,255,0.9);
+      border: 4px solid rgba(255,255,255,.9);
       border-radius: 50%;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,-50%);
       pointer-events: none;
-      box-sizing: border-box;
     }
 
     .buttons {
@@ -102,7 +108,7 @@
     }
 
     .button:disabled {
-      opacity: 0.45;
+      opacity: .45;
       cursor: default;
     }
 
@@ -116,7 +122,7 @@
       margin-top: 18px;
       min-height: 24px;
       font-size: 16px;
-      opacity: 0.9;
+      opacity: .9;
       text-align: center;
     }
 
@@ -128,268 +134,495 @@
 
 <body>
 
-  <div class="app">
+<div class="app">
 
-    <h1>HUMAN LOGO BOOTH</h1>
-    <p id="instruction">Posiziona il volto all'interno della guida</p>
+  <h1>HUMAN LOGO BOOTH</h1>
 
-    <div class="camera-box">
-      <video id="video" autoplay playsinline muted></video>
-      <img id="previewImage" alt="Anteprima foto">
-      <div id="faceGuide" class="face-guide"></div>
+  <p id="instruction">
+    Posiziona il volto all'interno della guida
+  </p>
+
+  <div class="camera-box">
+
+    <video
+      id="video"
+      autoplay
+      playsinline
+      muted>
+    </video>
+
+    <img
+      id="previewImage"
+      alt="Anteprima foto"
+    >
+
+    <div
+      id="faceGuide"
+      class="face-guide">
     </div>
-
-    <div class="buttons">
-      <button
-        id="startButton"
-        class="button"
-        onclick="startCamera()">
-        ATTIVA FOTOCAMERA
-      </button>
-
-      <button
-        id="shootButton"
-        class="button"
-        onclick="takePhoto()">
-        SCATTA FOTO
-      </button>
-
-      <button
-        id="retakeButton"
-        class="button secondary"
-        onclick="retakePhoto()">
-        RIFAI FOTO
-      </button>
-
-      <button
-        id="sendButton"
-        class="button"
-        onclick="sendPhoto()">
-        INVIA
-      </button>
-    </div>
-
-    <div id="status"></div>
-
-    <canvas id="canvas"></canvas>
 
   </div>
 
-  <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwIQ4bP6RxXol5l0D-dPlgUIHKJw5Ctr4nn_utJz1mjGsZRDIoedZnvPUwnzrk1C2EybA/exec";
+  <div class="buttons">
 
-    const video = document.getElementById('video');
-    const previewImage = document.getElementById('previewImage');
-    const canvas = document.getElementById('canvas');
+    <button
+      id="startButton"
+      class="button"
+      onclick="startCamera()">
+      ATTIVA FOTOCAMERA
+    </button>
 
-    const startButton = document.getElementById('startButton');
-    const shootButton = document.getElementById('shootButton');
-    const sendButton = document.getElementById('sendButton');
-    const retakeButton = document.getElementById('retakeButton');
+    <button
+      id="shootButton"
+      class="button"
+      onclick="takePhoto()">
+      SCATTA FOTO
+    </button>
 
-    const statusBox = document.getElementById('status');
-    const instruction = document.getElementById('instruction');
-    const faceGuide = document.getElementById('faceGuide');
+    <button
+      id="retakeButton"
+      class="button secondary"
+      onclick="retakePhoto()">
+      RIFAI FOTO
+    </button>
 
-    let currentStream = null;
-    let capturedImage = null;
-    let sending = false;
+    <button
+      id="sendButton"
+      class="button"
+      onclick="sendPhoto()">
+      INVIA
+    </button>
 
-    async function startCamera() {
-      statusBox.textContent = 'Attivazione fotocamera...';
+  </div>
 
-      try {
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'user'
-          },
-          audio: false
-        });
+  <div id="status"></div>
 
-        video.srcObject = currentStream;
+  <canvas id="canvas"></canvas>
 
-        video.style.display = 'block';
-        previewImage.style.display = 'none';
+</div>
 
-        faceGuide.style.display = 'block';
 
-        startButton.style.display = 'none';
-        shootButton.style.display = 'inline-block';
-        sendButton.style.display = 'none';
-        retakeButton.style.display = 'none';
+<script>
 
-        instruction.textContent =
-          'Posiziona il volto all\'interno della guida';
+  const APPS_SCRIPT_URL =
+    'https://script.google.com/macros/s/AKfycbwIQ4bP6RxXol5l0D-dPlgUIHKJw5Ctr4nn_utJz1mjGsZRDIoedZnvPUwnzrk1C2EybA/exec';
 
-        statusBox.textContent = '';
 
-      } catch (error) {
-        console.error(error);
+  const video =
+    document.getElementById('video');
 
-        statusBox.textContent =
-          'Errore fotocamera: ' +
-          error.name +
-          ' - ' +
-          error.message;
-      }
-    }
+  const previewImage =
+    document.getElementById('previewImage');
 
-    function stopCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-        currentStream = null;
-      }
+  const canvas =
+    document.getElementById('canvas');
 
-      video.srcObject = null;
-    }
+  const startButton =
+    document.getElementById('startButton');
 
-    function takePhoto() {
-      if (!video.videoWidth || !video.videoHeight) {
-        statusBox.textContent =
-          'La fotocamera non è ancora pronta.';
-        return;
-      }
+  const shootButton =
+    document.getElementById('shootButton');
 
-      const sourceWidth = video.videoWidth;
-      const sourceHeight = video.videoHeight;
+  const sendButton =
+    document.getElementById('sendButton');
 
-      const side = Math.min(sourceWidth, sourceHeight);
+  const retakeButton =
+    document.getElementById('retakeButton');
 
-      const sourceX = (sourceWidth - side) / 2;
-      const sourceY = (sourceHeight - side) / 2;
+  const statusBox =
+    document.getElementById('status');
 
-      const outputSize = 400;
+  const instruction =
+    document.getElementById('instruction');
 
-      canvas.width = outputSize;
-      canvas.height = outputSize;
+  const faceGuide =
+    document.getElementById('faceGuide');
 
-      const ctx = canvas.getContext('2d');
 
-      ctx.save();
+  let currentStream = null;
+  let capturedImage = null;
+  let sending = false;
 
-      ctx.translate(outputSize, 0);
-      ctx.scale(-1, 1);
 
-      ctx.drawImage(
-        video,
-        sourceX,
-        sourceY,
-        side,
-        side,
-        0,
-        0,
-        outputSize,
-        outputSize
-      );
+  async function startCamera() {
 
-      ctx.restore();
+    statusBox.textContent =
+      'Attivazione fotocamera...';
 
-      capturedImage =
-        canvas.toDataURL('image/jpeg', 0.86);
 
-      previewImage.src = capturedImage;
+    try {
 
-      stopCamera();
+      currentStream =
+        await navigator.mediaDevices
+          .getUserMedia({
+            video: {
+              facingMode: 'user'
+            },
+            audio: false
+          });
 
-      video.style.display = 'none';
-      previewImage.style.display = 'block';
 
-      faceGuide.style.display = 'none';
+      video.srcObject =
+        currentStream;
 
-      shootButton.style.display = 'none';
-      retakeButton.style.display = 'inline-block';
-      sendButton.style.display = 'inline-block';
+
+      video.style.display =
+        'block';
+
+
+      previewImage.style.display =
+        'none';
+
+
+      faceGuide.style.display =
+        'block';
+
+
+      startButton.style.display =
+        'none';
+
+
+      shootButton.style.display =
+        'inline-block';
+
+
+      sendButton.style.display =
+        'none';
+
+
+      retakeButton.style.display =
+        'none';
+
 
       instruction.textContent =
-        'Ti piace questa foto?';
+        'Posiziona il volto all’interno della guida';
 
-      statusBox.textContent = '';
-    }
-
-    async function retakePhoto() {
-      capturedImage = null;
-
-      previewImage.src = '';
-      previewImage.style.display = 'none';
-
-      sendButton.style.display = 'none';
-      retakeButton.style.display = 'none';
-
-      await startCamera();
-    }
-
-    async function sendPhoto() {
-      if (!capturedImage || sending) {
-        return;
-      }
-
-      sending = true;
-
-      sendButton.disabled = true;
-      retakeButton.disabled = true;
 
       statusBox.textContent =
-        'Salvataggio foto...';
+        '';
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      statusBox.textContent =
+        'Errore fotocamera: ' +
+        error.name +
+        ' - ' +
+        error.message;
+    }
+  }
+
+
+  function stopCamera() {
+
+    if (currentStream) {
+
+      currentStream
+        .getTracks()
+        .forEach(
+          function(track) {
+            track.stop();
+          }
+        );
+
+      currentStream = null;
+    }
+
+
+    video.srcObject = null;
+  }
+
+
+  function takePhoto() {
+
+    if (
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
+
+      statusBox.textContent =
+        'La fotocamera non è ancora pronta.';
+
+      return;
+    }
+
+
+    const sourceWidth =
+      video.videoWidth;
+
+    const sourceHeight =
+      video.videoHeight;
+
+
+    const side =
+      Math.min(
+        sourceWidth,
+        sourceHeight
+      );
+
+
+    const sourceX =
+      (
+        sourceWidth -
+        side
+      ) / 2;
+
+
+    const sourceY =
+      (
+        sourceHeight -
+        side
+      ) / 2;
+
+
+    /*
+     * 240x240 è più che sufficiente
+     * per il mosaico e alleggerisce
+     * molto Apps Script e il LED wall.
+     */
+    const outputSize = 240;
+
+
+    canvas.width =
+      outputSize;
+
+    canvas.height =
+      outputSize;
+
+
+    const ctx =
+      canvas.getContext('2d');
+
+
+    ctx.save();
+
+
+    ctx.translate(
+      outputSize,
+      0
+    );
+
+
+    ctx.scale(
+      -1,
+      1
+    );
+
+
+    ctx.drawImage(
+      video,
+      sourceX,
+      sourceY,
+      side,
+      side,
+      0,
+      0,
+      outputSize,
+      outputSize
+    );
+
+
+    ctx.restore();
+
+
+    capturedImage =
+      canvas.toDataURL(
+        'image/jpeg',
+        .74
+      );
+
+
+    previewImage.src =
+      capturedImage;
+
+
+    stopCamera();
+
+
+    video.style.display =
+      'none';
+
+
+    previewImage.style.display =
+      'block';
+
+
+    faceGuide.style.display =
+      'none';
+
+
+    shootButton.style.display =
+      'none';
+
+
+    retakeButton.style.display =
+      'inline-block';
+
+
+    sendButton.style.display =
+      'inline-block';
+
+
+    instruction.textContent =
+      'Ti piace questa foto?';
+
+
+    statusBox.textContent =
+      '';
+  }
+
+
+  async function retakePhoto() {
+
+    capturedImage = null;
+
+    previewImage.src = '';
+
+    previewImage.style.display =
+      'none';
+
+
+    sendButton.style.display =
+      'none';
+
+
+    retakeButton.style.display =
+      'none';
+
+
+    await startCamera();
+  }
+
+
+  async function sendPhoto() {
+
+    if (
+      !capturedImage ||
+      sending
+    ) {
+      return;
+    }
+
+
+    sending = true;
+
+
+    sendButton.disabled =
+      true;
+
+
+    retakeButton.disabled =
+      true;
+
+
+    statusBox.textContent =
+      'Invio foto...';
+
+
+    try {
+
+      const response =
+        await fetch(
+          APPS_SCRIPT_URL,
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'text/plain;charset=utf-8'
+            },
+
+            body:
+              JSON.stringify({
+                image:
+                  capturedImage
+              })
+          }
+        );
+
+
+      const text =
+        await response.text();
+
+
+      let result;
+
 
       try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify({
-            image: capturedImage
-          })
-        });
 
-        const text = await response.text();
+        result =
+          JSON.parse(text);
 
-        let result;
+      } catch (e) {
 
-        try {
-          result = JSON.parse(text);
-        } catch (e) {
-          throw new Error(
-            'Risposta non valida da Apps Script: ' + text
-          );
-        }
-
-        if (!result.success) {
-          throw new Error(
-            result.error ||
-            'Errore durante il salvataggio.'
-          );
-        }
-
-        capturedImage = null;
-
-        sendButton.style.display = 'none';
-        retakeButton.style.display = 'none';
-        startButton.style.display = 'inline-block';
-
-        startButton.textContent = 'NUOVA FOTO';
-
-        instruction.textContent =
-          'Foto inviata correttamente';
-
-        statusBox.textContent =
-          'Foto salvata correttamente. ID: ' +
-          result.id;
-
-      } catch (error) {
-        console.error(error);
-
-        statusBox.textContent =
-          'Errore salvataggio: ' +
-          error.message;
-
-      } finally {
-        sending = false;
-        sendButton.disabled = false;
-        retakeButton.disabled = false;
+        throw new Error(
+          'Risposta non valida da Apps Script.'
+        );
       }
+
+
+      if (!result.success) {
+
+        throw new Error(
+          result.error ||
+          'Errore durante il salvataggio.'
+        );
+      }
+
+
+      capturedImage = null;
+
+
+      sendButton.style.display =
+        'none';
+
+
+      retakeButton.style.display =
+        'none';
+
+
+      startButton.style.display =
+        'inline-block';
+
+
+      startButton.textContent =
+        'NUOVA FOTO';
+
+
+      instruction.textContent =
+        'Foto inviata correttamente';
+
+
+      statusBox.textContent =
+        'Foto salvata. ID: ' +
+        result.id;
+
+
+    } catch (error) {
+
+      console.error(error);
+
+
+      statusBox.textContent =
+        'Errore salvataggio: ' +
+        error.message;
+
+
+    } finally {
+
+      sending = false;
+
+      sendButton.disabled =
+        false;
+
+      retakeButton.disabled =
+        false;
     }
-  </script>
+  }
+
+</script>
 
 </body>
 </html>
