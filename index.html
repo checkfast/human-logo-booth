@@ -1,128 +1,421 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Human Logo Booth</title>
+  <meta
+    charset="UTF-8"
+  >
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Human Logo Booth
+  </title>
+
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
+  </script>
 
   <style>
     * {
-      box-sizing: border-box;
+      box-sizing:
+        border-box;
     }
 
     html,
     body {
-      margin: 0;
-      width: 100%;
-      min-height: 100%;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: white;
+      margin:
+        0;
+      width:
+        100%;
+      min-height:
+        100%;
+      font-family:
+        Arial,
+        sans-serif;
+      background:
+        #070a0f;
+      color:
+        white;
+    }
+
+    body {
+      min-height:
+        100vh;
     }
 
     .app {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 30px;
+      width:
+        100%;
+      min-height:
+        100vh;
+      display:
+        flex;
+      flex-direction:
+        column;
+      align-items:
+        center;
+      justify-content:
+        center;
+      padding:
+        28px;
+    }
+
+    .header {
+      text-align:
+        center;
+      margin-bottom:
+        20px;
     }
 
     h1 {
-      margin: 0 0 10px;
-      font-size: 38px;
-      text-align: center;
+      margin:
+        0 0 8px;
+      font-size:
+        clamp(
+          28px,
+          4vw,
+          44px
+        );
     }
 
     #instruction {
-      margin: 0 0 25px;
-      font-size: 20px;
-      opacity: .85;
-      text-align: center;
+      margin:
+        0;
+      color:
+        #aeb9c8;
+      font-size:
+        18px;
     }
 
     .camera-box {
-      position: relative;
-      width: min(75vw, 700px);
-      aspect-ratio: 4 / 3;
-      background: #000;
-      border-radius: 24px;
-      overflow: hidden;
+      position:
+        relative;
+      width:
+        min(
+          78vw,
+          720px
+        );
+      aspect-ratio:
+        4 / 3;
+      background:
+        #000;
+      border:
+        1px solid
+        rgba(255,255,255,.1);
+      border-radius:
+        26px;
+      overflow:
+        hidden;
+      box-shadow:
+        0 18px 50px
+        rgba(0,0,0,.35);
     }
 
     video,
     #previewImage {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      width:
+        100%;
+      height:
+        100%;
+      object-fit:
+        cover;
     }
 
     video {
-      transform: scaleX(-1);
+      transform:
+        scaleX(-1);
     }
 
     #previewImage {
-      display: none;
+      display:
+        none;
     }
 
     .face-guide {
-      position: absolute;
-      width: 42%;
-      aspect-ratio: 1 / 1;
-      border: 4px solid rgba(255,255,255,.9);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-      pointer-events: none;
+      position:
+        absolute;
+      width:
+        40%;
+      aspect-ratio:
+        1 / 1;
+      border:
+        4px solid
+        rgba(255,255,255,.85);
+      border-radius:
+        50%;
+      top:
+        50%;
+      left:
+        50%;
+      transform:
+        translate(-50%,-50%);
+      pointer-events:
+        none;
     }
 
     .buttons {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 22px;
+      display:
+        flex;
+      flex-wrap:
+        wrap;
+      justify-content:
+        center;
+      gap:
+        12px;
+      margin-top:
+        22px;
     }
 
     .button {
-      padding: 18px 34px;
-      font-size: 22px;
-      font-weight: bold;
-      border: 0;
-      border-radius: 50px;
-      cursor: pointer;
-      background: white;
-      color: #111;
+      padding:
+        17px 32px;
+      border:
+        0;
+      border-radius:
+        50px;
+      background:
+        #0da8ff;
+      color:
+        white;
+      font-size:
+        19px;
+      font-weight:
+        800;
+      cursor:
+        pointer;
     }
 
     .button.secondary {
-      background: #2b2b2b;
-      color: white;
+      background:
+        #202733;
+    }
+
+    .button.white {
+      background:
+        white;
+      color:
+        #111;
     }
 
     .button:disabled {
-      opacity: .45;
-      cursor: default;
+      opacity:
+        .45;
     }
 
     #shootButton,
     #sendButton,
     #retakeButton {
-      display: none;
+      display:
+        none;
     }
 
     #status {
-      margin-top: 18px;
-      min-height: 24px;
-      font-size: 16px;
-      opacity: .9;
-      text-align: center;
+      margin-top:
+        14px;
+      min-height:
+        22px;
+      color:
+        #aeb9c8;
+      text-align:
+        center;
     }
 
-    canvas {
-      display: none;
+
+    .result-panel {
+      display:
+        none;
+      width:
+        min(
+          92vw,
+          720px
+        );
+      margin-top:
+        22px;
+      border:
+        1px solid
+        rgba(255,255,255,.09);
+      border-radius:
+        24px;
+      padding:
+        22px;
+      background:
+        #111722;
+    }
+
+    .result-grid {
+      display:
+        grid;
+      grid-template-columns:
+        1fr 1fr;
+      gap:
+        20px;
+      align-items:
+        center;
+    }
+
+    .download-block {
+      text-align:
+        center;
+    }
+
+    .download-title {
+      font-weight:
+        800;
+      margin-bottom:
+        12px;
+      font-size:
+        18px;
+    }
+
+    #downloadQr {
+      display:
+        inline-block;
+      background:
+        white;
+      padding:
+        12px;
+      border-radius:
+        16px;
+    }
+
+    .print-block {
+      display:
+        flex;
+      flex-direction:
+        column;
+      gap:
+        12px;
+      align-items:
+        stretch;
+    }
+
+    .print-note {
+      color:
+        #9faabb;
+      font-size:
+        13px;
+      line-height:
+        1.45;
+      text-align:
+        center;
+    }
+
+
+    .upload-mode {
+      display:
+        none;
+      width:
+        min(
+          92vw,
+          620px
+        );
+      border:
+        1px solid
+        rgba(255,255,255,.09);
+      border-radius:
+        24px;
+      background:
+        #111722;
+      padding:
+        24px;
+      text-align:
+        center;
+    }
+
+    .upload-mode input {
+      width:
+        100%;
+      margin:
+        18px 0;
+      padding:
+        14px;
+      border:
+        1px solid
+        #313b4a;
+      border-radius:
+        12px;
+      color:
+        white;
+      background:
+        #0b0f16;
+    }
+
+    #uploadPreview {
+      display:
+        none;
+      width:
+        min(
+          100%,
+          440px
+        );
+      aspect-ratio:
+        1 / 1;
+      object-fit:
+        cover;
+      border-radius:
+        18px;
+      margin:
+        0 auto 18px;
+    }
+
+
+    #printImage {
+      display:
+        none;
+    }
+
+
+    @media (
+      max-width:
+        650px
+    ) {
+
+      .camera-box {
+        width:
+          94vw;
+      }
+
+      .result-grid {
+        grid-template-columns:
+          1fr;
+      }
+    }
+
+
+    @media print {
+
+      body * {
+        visibility:
+          hidden !important;
+      }
+
+      #printImage,
+      #printImage * {
+        visibility:
+          visible !important;
+      }
+
+      #printImage {
+        display:
+          block !important;
+        position:
+          fixed;
+        left:
+          0;
+        top:
+          0;
+        width:
+          100vw;
+        height:
+          100vh;
+        object-fit:
+          contain;
+        background:
+          white;
+      }
     }
   </style>
 </head>
@@ -131,121 +424,415 @@
 
 <div class="app">
 
-  <h1>HUMAN LOGO BOOTH</h1>
 
-  <p id="instruction">
-    Posiziona il volto all'interno della guida
-  </p>
+  <div class="header">
 
-  <div class="camera-box">
+    <h1 id="pageTitle">
+      HUMAN LOGO BOOTH
+    </h1>
 
-    <video
-      id="video"
-      autoplay
-      playsinline
-      muted>
-    </video>
+    <p id="instruction">
+      Posiziona il volto all'interno della guida
+    </p>
 
-    <img
-      id="previewImage"
-      alt="Anteprima foto"
-    >
+  </div>
 
-    <div
-      id="faceGuide"
-      class="face-guide">
+
+  <div
+    id="boothMode">
+
+    <div class="camera-box">
+
+      <video
+        id="video"
+        autoplay
+        playsinline
+        muted>
+      </video>
+
+      <img
+        id="previewImage"
+        alt="Anteprima foto"
+      >
+
+      <div
+        id="faceGuide"
+        class="face-guide">
+      </div>
+
+    </div>
+
+
+    <div class="buttons">
+
+      <button
+        id="startButton"
+        class="button white"
+        onclick="startCamera()">
+        ATTIVA FOTOCAMERA
+      </button>
+
+      <button
+        id="shootButton"
+        class="button"
+        onclick="takePhoto()">
+        SCATTA FOTO
+      </button>
+
+      <button
+        id="retakeButton"
+        class="button secondary"
+        onclick="retakePhoto()">
+        RIFAI FOTO
+      </button>
+
+      <button
+        id="sendButton"
+        class="button"
+        onclick="sendPhoto()">
+        INVIA
+      </button>
+
     </div>
 
   </div>
 
-  <div class="buttons">
+
+  <div
+    id="uploadMode"
+    class="upload-mode">
+
+    <h2>
+      Carica la tua foto
+    </h2>
+
+    <p>
+      Scegli una foto dal tuo smartphone.
+      Verrà ritagliata automaticamente
+      in formato quadrato e aggiunta al mosaico.
+    </p>
+
+    <input
+      id="uploadFile"
+      type="file"
+      accept="image/*"
+    >
+
+    <img
+      id="uploadPreview"
+      alt="Anteprima upload"
+    >
 
     <button
-      id="startButton"
+      id="uploadSendButton"
       class="button"
-      onclick="startCamera()">
-      ATTIVA FOTOCAMERA
-    </button>
-
-    <button
-      id="shootButton"
-      class="button"
-      onclick="takePhoto()">
-      SCATTA FOTO
-    </button>
-
-    <button
-      id="retakeButton"
-      class="button secondary"
-      onclick="retakePhoto()">
-      RIFAI FOTO
-    </button>
-
-    <button
-      id="sendButton"
-      class="button"
-      onclick="sendPhoto()">
-      INVIA
+      onclick="sendUploadedPhoto()"
+      disabled>
+      INVIA AL MOSAICO
     </button>
 
   </div>
 
-  <div id="status"></div>
 
-  <canvas id="canvas"></canvas>
+  <div id="status">
+  </div>
+
+
+  <div
+    id="resultPanel"
+    class="result-panel">
+
+    <div class="result-grid">
+
+      <div class="download-block">
+
+        <div class="download-title">
+          SCARICA LA TUA FOTO
+        </div>
+
+        <div id="downloadQr">
+        </div>
+
+      </div>
+
+
+      <div class="print-block">
+
+        <button
+          class="button white"
+          onclick="printPhoto()">
+          STAMPA FOTO
+        </button>
+
+        <div class="print-note">
+          La stampante deve essere già configurata
+          sul dispositivo e raggiungibile sulla stessa rete Wi-Fi.
+        </div>
+
+        <a
+          id="directDownloadLink"
+          class="button secondary"
+          href="#"
+          target="_blank"
+          style="text-decoration:none;text-align:center;">
+          APRI / SCARICA FOTO
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <canvas
+    id="canvas"
+    style="display:none">
+  </canvas>
+
+  <canvas
+    id="thumbCanvas"
+    style="display:none">
+  </canvas>
+
+  <img
+    id="printImage"
+    alt="Foto da stampare"
+  >
 
 </div>
+
 
 <script>
   const APPS_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbwIQ4bP6RxXol5l0D-dPlgUIHKJw5Ctr4nn_utJz1mjGsZRDIoedZnvPUwnzrk1C2EybA/exec';
 
-  const video = document.getElementById('video');
-  const previewImage = document.getElementById('previewImage');
-  const canvas = document.getElementById('canvas');
 
-  const startButton = document.getElementById('startButton');
-  const shootButton = document.getElementById('shootButton');
-  const sendButton = document.getElementById('sendButton');
-  const retakeButton = document.getElementById('retakeButton');
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
 
-  const statusBox = document.getElementById('status');
-  const instruction = document.getElementById('instruction');
-  const faceGuide = document.getElementById('faceGuide');
+  const mode =
+    params.get('mode') ||
+    'booth';
 
-  let currentStream = null;
-  let capturedImage = null;
-  let sending = false;
+
+  const video =
+    document.getElementById(
+      'video'
+    );
+
+  const previewImage =
+    document.getElementById(
+      'previewImage'
+    );
+
+  const canvas =
+    document.getElementById(
+      'canvas'
+    );
+
+  const thumbCanvas =
+    document.getElementById(
+      'thumbCanvas'
+    );
+
+  const faceGuide =
+    document.getElementById(
+      'faceGuide'
+    );
+
+  const startButton =
+    document.getElementById(
+      'startButton'
+    );
+
+  const shootButton =
+    document.getElementById(
+      'shootButton'
+    );
+
+  const sendButton =
+    document.getElementById(
+      'sendButton'
+    );
+
+  const retakeButton =
+    document.getElementById(
+      'retakeButton'
+    );
+
+  const statusBox =
+    document.getElementById(
+      'status'
+    );
+
+  const instruction =
+    document.getElementById(
+      'instruction'
+    );
+
+  const resultPanel =
+    document.getElementById(
+      'resultPanel'
+    );
+
+  const downloadQr =
+    document.getElementById(
+      'downloadQr'
+    );
+
+  const directDownloadLink =
+    document.getElementById(
+      'directDownloadLink'
+    );
+
+  const printImage =
+    document.getElementById(
+      'printImage'
+    );
+
+  const uploadFile =
+    document.getElementById(
+      'uploadFile'
+    );
+
+  const uploadPreview =
+    document.getElementById(
+      'uploadPreview'
+    );
+
+  const uploadSendButton =
+    document.getElementById(
+      'uploadSendButton'
+    );
+
+
+  let currentStream =
+    null;
+
+  let capturedImage =
+    null;
+
+  let thumbnailImage =
+    null;
+
+  let sending =
+    false;
+
+  let lastSentImage =
+    null;
+
+
+  if (
+    mode ===
+    'upload'
+  ) {
+
+    document
+      .getElementById(
+        'boothMode'
+      )
+      .style.display =
+        'none';
+
+    document
+      .getElementById(
+        'uploadMode'
+      )
+      .style.display =
+        'block';
+
+    document
+      .getElementById(
+        'pageTitle'
+      )
+      .textContent =
+        'CARICA LA TUA FOTO';
+
+    instruction.textContent =
+      'Partecipa al mosaico dell’evento';
+
+  } else {
+
+    document
+      .getElementById(
+        'boothMode'
+      )
+      .style.display =
+        'block';
+  }
+
 
   async function startCamera() {
-    statusBox.textContent = 'Attivazione fotocamera...';
+
+    hideResult();
+
+    statusBox.textContent =
+      'Attivazione fotocamera...';
 
     try {
-      currentStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user'
-        },
-        audio: false
-      });
 
-      video.srcObject = currentStream;
+      currentStream =
+        await navigator
+          .mediaDevices
+          .getUserMedia({
+            video: {
+              facingMode:
+                'user',
 
-      video.style.display = 'block';
-      previewImage.style.display = 'none';
-      faceGuide.style.display = 'block';
+              width: {
+                ideal:
+                  1920
+              },
 
-      startButton.style.display = 'none';
-      shootButton.style.display = 'inline-block';
-      sendButton.style.display = 'none';
-      retakeButton.style.display = 'none';
+              height: {
+                ideal:
+                  1080
+              }
+            },
+
+            audio:
+              false
+          });
+
+
+      video.srcObject =
+        currentStream;
+
+      video.style.display =
+        'block';
+
+      previewImage.style.display =
+        'none';
+
+      faceGuide.style.display =
+        'block';
+
+      startButton.style.display =
+        'none';
+
+      shootButton.style.display =
+        'inline-block';
+
+      sendButton.style.display =
+        'none';
+
+      retakeButton.style.display =
+        'none';
 
       instruction.textContent =
         'Posiziona il volto all’interno della guida';
 
-      statusBox.textContent = '';
+      statusBox.textContent =
+        '';
 
     } catch (error) {
-      console.error(error);
+
+      console.error(
+        error
+      );
 
       statusBox.textContent =
         'Errore fotocamera: ' +
@@ -255,51 +842,175 @@
     }
   }
 
-  function stopCamera() {
-    if (currentStream) {
-      currentStream.getTracks().forEach(function(track) {
-        track.stop();
-      });
 
-      currentStream = null;
+  function stopCamera() {
+
+    if (currentStream) {
+
+      currentStream
+        .getTracks()
+        .forEach(
+          function(
+            track
+          ) {
+
+            track.stop();
+          }
+        );
+
+      currentStream =
+        null;
     }
 
-    video.srcObject = null;
+    video.srcObject =
+      null;
   }
 
+
   function takePhoto() {
-    if (!video.videoWidth || !video.videoHeight) {
+
+    if (
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
+
       statusBox.textContent =
         'La fotocamera non è ancora pronta.';
+
       return;
     }
 
-    const sourceWidth = video.videoWidth;
-    const sourceHeight = video.videoHeight;
 
-    const side = Math.min(
-      sourceWidth,
-      sourceHeight
+    const imageSet =
+      createSquareImagesFromVideo();
+
+
+    capturedImage =
+      imageSet.full;
+
+    thumbnailImage =
+      imageSet.thumb;
+
+
+    previewImage.src =
+      capturedImage;
+
+
+    stopCamera();
+
+
+    video.style.display =
+      'none';
+
+    previewImage.style.display =
+      'block';
+
+    faceGuide.style.display =
+      'none';
+
+    shootButton.style.display =
+      'none';
+
+    retakeButton.style.display =
+      'inline-block';
+
+    sendButton.style.display =
+      'inline-block';
+
+    instruction.textContent =
+      'Ti piace questa foto?';
+
+    statusBox.textContent =
+      '';
+  }
+
+
+  function createSquareImagesFromVideo() {
+
+    const sourceWidth =
+      video.videoWidth;
+
+    const sourceHeight =
+      video.videoHeight;
+
+    const side =
+      Math.min(
+        sourceWidth,
+        sourceHeight
+      );
+
+    const sx =
+      (
+        sourceWidth -
+        side
+      ) /
+      2;
+
+    const sy =
+      (
+        sourceHeight -
+        side
+      ) /
+      2;
+
+
+    drawSquareVideo(
+      canvas,
+      900,
+      sx,
+      sy,
+      side
     );
 
-    const sourceX =
-      (sourceWidth - side) / 2;
 
-    const sourceY =
-      (sourceHeight - side) / 2;
+    drawSquareVideo(
+      thumbCanvas,
+      320,
+      sx,
+      sy,
+      side
+    );
 
-    const outputSize = 320;
 
-    canvas.width = outputSize;
-    canvas.height = outputSize;
+    return {
+      full:
+        canvas.toDataURL(
+          'image/jpeg',
+          .90
+        ),
+
+      thumb:
+        thumbCanvas.toDataURL(
+          'image/jpeg',
+          .78
+        )
+    };
+  }
+
+
+  function drawSquareVideo(
+    targetCanvas,
+    size,
+    sx,
+    sy,
+    side
+  ) {
+
+    targetCanvas.width =
+      size;
+
+    targetCanvas.height =
+      size;
 
     const ctx =
-      canvas.getContext('2d');
+      targetCanvas.getContext(
+        '2d'
+      );
 
     ctx.save();
 
     ctx.translate(
-      outputSize,
+      size,
       0
     );
 
@@ -310,131 +1021,541 @@
 
     ctx.drawImage(
       video,
-      sourceX,
-      sourceY,
+      sx,
+      sy,
       side,
       side,
       0,
       0,
-      outputSize,
-      outputSize
+      size,
+      size
     );
 
     ctx.restore();
-
-    capturedImage =
-      canvas.toDataURL(
-        'image/jpeg',
-        .78
-      );
-
-    previewImage.src =
-      capturedImage;
-
-    stopCamera();
-
-    video.style.display = 'none';
-    previewImage.style.display = 'block';
-    faceGuide.style.display = 'none';
-
-    shootButton.style.display = 'none';
-    retakeButton.style.display = 'inline-block';
-    sendButton.style.display = 'inline-block';
-
-    instruction.textContent =
-      'Ti piace questa foto?';
-
-    statusBox.textContent = '';
   }
 
+
   async function retakePhoto() {
-    capturedImage = null;
 
-    previewImage.src = '';
-    previewImage.style.display = 'none';
+    capturedImage =
+      null;
 
-    sendButton.style.display = 'none';
-    retakeButton.style.display = 'none';
+    thumbnailImage =
+      null;
+
+    previewImage.src =
+      '';
+
+    previewImage.style.display =
+      'none';
+
+    sendButton.style.display =
+      'none';
+
+    retakeButton.style.display =
+      'none';
 
     await startCamera();
   }
 
+
   async function sendPhoto() {
-    if (!capturedImage || sending) {
+
+    if (
+      !capturedImage ||
+      sending
+    ) {
       return;
     }
 
-    sending = true;
 
-    sendButton.disabled = true;
-    retakeButton.disabled = true;
+    await sendToServer(
+      capturedImage,
+      thumbnailImage,
+      'booth'
+    );
+  }
+
+
+  uploadFile.addEventListener(
+    'change',
+    async function() {
+
+      const file =
+        this.files[0];
+
+      if (!file) {
+        return;
+      }
+
+
+      statusBox.textContent =
+        'Preparazione foto...';
+
+
+      try {
+
+        const imageSet =
+          await createSquareImagesFromFile(
+            file
+          );
+
+
+        capturedImage =
+          imageSet.full;
+
+        thumbnailImage =
+          imageSet.thumb;
+
+
+        uploadPreview.src =
+          capturedImage;
+
+        uploadPreview.style.display =
+          'block';
+
+        uploadSendButton.disabled =
+          false;
+
+        statusBox.textContent =
+          '';
+
+        hideResult();
+
+      } catch (error) {
+
+        statusBox.textContent =
+          'Errore: ' +
+          error.message;
+      }
+    }
+  );
+
+
+  async function createSquareImagesFromFile(
+    file
+  ) {
+
+    const dataUrl =
+      await readFileAsDataUrl(
+        file
+      );
+
+    const img =
+      await loadImage(
+        dataUrl
+      );
+
+
+    const side =
+      Math.min(
+        img.naturalWidth,
+        img.naturalHeight
+      );
+
+    const sx =
+      (
+        img.naturalWidth -
+        side
+      ) /
+      2;
+
+    const sy =
+      (
+        img.naturalHeight -
+        side
+      ) /
+      2;
+
+
+    drawSquareImage(
+      canvas,
+      img,
+      900,
+      sx,
+      sy,
+      side
+    );
+
+
+    drawSquareImage(
+      thumbCanvas,
+      img,
+      320,
+      sx,
+      sy,
+      side
+    );
+
+
+    return {
+      full:
+        canvas.toDataURL(
+          'image/jpeg',
+          .90
+        ),
+
+      thumb:
+        thumbCanvas.toDataURL(
+          'image/jpeg',
+          .78
+        )
+    };
+  }
+
+
+  function drawSquareImage(
+    targetCanvas,
+    img,
+    size,
+    sx,
+    sy,
+    side
+  ) {
+
+    targetCanvas.width =
+      size;
+
+    targetCanvas.height =
+      size;
+
+    const ctx =
+      targetCanvas.getContext(
+        '2d'
+      );
+
+    ctx.drawImage(
+      img,
+      sx,
+      sy,
+      side,
+      side,
+      0,
+      0,
+      size,
+      size
+    );
+  }
+
+
+  function readFileAsDataUrl(
+    file
+  ) {
+
+    return new Promise(
+      function(
+        resolve,
+        reject
+      ) {
+
+        const reader =
+          new FileReader();
+
+        reader.onload =
+          function(
+            event
+          ) {
+
+            resolve(
+              event.target.result
+            );
+          };
+
+        reader.onerror =
+          reject;
+
+        reader.readAsDataURL(
+          file
+        );
+      }
+    );
+  }
+
+
+  function loadImage(
+    src
+  ) {
+
+    return new Promise(
+      function(
+        resolve,
+        reject
+      ) {
+
+        const img =
+          new Image();
+
+        img.onload =
+          function() {
+
+            resolve(
+              img
+            );
+          };
+
+        img.onerror =
+          reject;
+
+        img.src =
+          src;
+      }
+    );
+  }
+
+
+  async function sendUploadedPhoto() {
+
+    if (
+      !capturedImage ||
+      sending
+    ) {
+      return;
+    }
+
+
+    await sendToServer(
+      capturedImage,
+      thumbnailImage,
+      'guest-upload'
+    );
+  }
+
+
+  async function sendToServer(
+    fullImage,
+    thumbImage,
+    source
+  ) {
+
+    sending =
+      true;
+
+    sendButton.disabled =
+      true;
+
+    retakeButton.disabled =
+      true;
+
+    uploadSendButton.disabled =
+      true;
 
     statusBox.textContent =
       'Invio foto...';
 
+
     try {
-      const response = await fetch(
-        APPS_SCRIPT_URL,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify({
-            image: capturedImage
-          })
-        }
-      );
+
+      const response =
+        await fetch(
+          APPS_SCRIPT_URL,
+          {
+            method:
+              'POST',
+
+            headers: {
+              'Content-Type':
+                'text/plain;charset=utf-8'
+            },
+
+            body:
+              JSON.stringify({
+                image:
+                  fullImage,
+
+                thumbnail:
+                  thumbImage,
+
+                source:
+                  source
+              })
+          }
+        );
+
 
       const text =
         await response.text();
 
       let result;
 
+
       try {
-        result = JSON.parse(text);
+
+        result =
+          JSON.parse(
+            text
+          );
+
       } catch (e) {
+
         throw new Error(
           'Risposta non valida da Apps Script.'
         );
       }
 
-      if (!result.success) {
+
+      if (
+        !result.success
+      ) {
+
         throw new Error(
           result.error ||
           'Errore durante il salvataggio.'
         );
       }
 
-      capturedImage = null;
 
-      sendButton.style.display = 'none';
-      retakeButton.style.display = 'none';
+      lastSentImage =
+        fullImage;
 
-      startButton.style.display = 'inline-block';
-      startButton.textContent = 'NUOVA FOTO';
 
-      instruction.textContent =
-        'Foto inviata correttamente';
+      showResult(
+        result.downloadUrl
+      );
+
 
       statusBox.textContent =
-        'Foto salvata. ID: ' +
+        'Foto inviata al mosaico. ID: ' +
         result.id;
 
+
+      if (
+        mode ===
+        'booth'
+      ) {
+
+        capturedImage =
+          null;
+
+        thumbnailImage =
+          null;
+
+        sendButton.style.display =
+          'none';
+
+        retakeButton.style.display =
+          'none';
+
+        startButton.style.display =
+          'inline-block';
+
+        startButton.textContent =
+          'NUOVA FOTO';
+
+        instruction.textContent =
+          'Foto inviata correttamente';
+
+      } else {
+
+        uploadSendButton.disabled =
+          true;
+
+        instruction.textContent =
+          'Foto inviata correttamente';
+      }
+
+
     } catch (error) {
-      console.error(error);
+
+      console.error(
+        error
+      );
 
       statusBox.textContent =
         'Errore salvataggio: ' +
         error.message;
 
-    } finally {
-      sending = false;
 
-      sendButton.disabled = false;
-      retakeButton.disabled = false;
+    } finally {
+
+      sending =
+        false;
+
+      sendButton.disabled =
+        false;
+
+      retakeButton.disabled =
+        false;
     }
+  }
+
+
+  function showResult(
+    downloadUrl
+  ) {
+
+    resultPanel.style.display =
+      'block';
+
+    directDownloadLink.href =
+      downloadUrl;
+
+    downloadQr.innerHTML =
+      '';
+
+
+    if (
+      typeof QRCode !==
+      'undefined'
+    ) {
+
+      new QRCode(
+        downloadQr,
+        {
+          text:
+            downloadUrl,
+
+          width:
+            180,
+
+          height:
+            180,
+
+          correctLevel:
+            QRCode.CorrectLevel.M
+        }
+      );
+
+    } else {
+
+      downloadQr.textContent =
+        'Apri il link per scaricare la foto';
+    }
+  }
+
+
+  function hideResult() {
+
+    resultPanel.style.display =
+      'none';
+
+    downloadQr.innerHTML =
+      '';
+  }
+
+
+  function printPhoto() {
+
+    if (!lastSentImage) {
+
+      alert(
+        'Nessuna foto disponibile da stampare.'
+      );
+
+      return;
+    }
+
+
+    printImage.src =
+      lastSentImage;
+
+
+    setTimeout(
+      function() {
+
+        window.print();
+      },
+      250
+    );
   }
 </script>
 
