@@ -6,6 +6,7 @@
   <title>Human Logo Booth</title>
   <style>
     *{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif;background:#070a0f;color:#fff}body{min-height:100vh}.app{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}.header{text-align:center;margin-bottom:20px}h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px)}#instruction{margin:0;color:#aeb9c8;font-size:18px}.camera-box{position:relative;width:min(78vw,720px);aspect-ratio:4/3;background:#000;border:1px solid rgba(255,255,255,.1);border-radius:26px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}video,.preview-image{width:100%;height:100%;object-fit:cover}video{transform:scaleX(-1)}.preview-image{display:none}.face-guide{position:absolute;width:40%;aspect-ratio:1/1;border:4px solid rgba(255,255,255,.85);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px}.button{padding:17px 32px;border:0;border-radius:50px;background:#0da8ff;color:white;font-size:19px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center}.button.secondary{background:#202733}.button.white{background:white;color:#111}.button:disabled{opacity:.45}#shootButton,#sendButton,#retakeButton{display:none}#status{margin-top:14px;min-height:22px;color:#aeb9c8;text-align:center}.result-panel{display:none;width:min(92vw,720px);margin-top:18px;text-align:center}.result-panel .button{min-width:230px}.upload-mode{display:none;width:min(94vw,720px)}.choice-card{border:1px solid rgba(255,255,255,.09);border-radius:24px;background:#111722;padding:24px;text-align:center}.choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}.guest-selfie,.guest-upload{display:none;margin-top:20px}.guest-upload input{width:100%;padding:14px;margin:12px 0 18px;border:1px solid #313b4a;border-radius:12px;color:white;background:#0b0f16}#guestPreview{display:none}.guest-file-preview{display:none;width:min(100%,520px);aspect-ratio:1/1;object-fit:cover;border-radius:20px;margin:18px auto}#guestSendButton{display:none}@media(max-width:650px){.camera-box{width:94vw}.choice-actions{grid-template-columns:1fr}}
+  #resultPhoto{display:block;width:min(100%,520px);height:auto;border-radius:20px;margin:0 auto 18px}.result-panel .buttons{align-items:center}#savedPhotoLink{display:none;color:white;margin:20px 0}#savePhotoHelp{color:#aeb9c8;line-height:1.5}#sharePhotoButton{display:none}
   </style>
 </head>
 <body>
@@ -67,7 +68,13 @@
   <div id="status"></div>
 
   <div id="resultPanel" class="result-panel">
-    <button class="button white" onclick="downloadCurrentPhoto()">SCARICA FOTO</button>
+    <img id="resultPhoto" alt="La tua foto inviata al mosaico">
+    <div class="buttons">
+      <button class="button white" onclick="downloadCurrentPhoto()">SCARICA FOTO</button>
+      <button id="sharePhotoButton" class="button secondary" onclick="shareCurrentPhoto()">SALVA / CONDIVIDI</button>
+    </div>
+    <p id="savePhotoHelp" role="status" aria-live="polite">Puoi scaricare la foto o tenere premuta l’anteprima per salvarla.</p>
+    <a id="savedPhotoLink" target="_blank" rel="noopener">APRI LA FOTO SALVATA</a>
   </div>
 
   <canvas id="canvas" style="display:none"></canvas>
@@ -82,6 +89,7 @@ const guestVideo=document.getElementById('guestVideo'),guestPreview=document.get
 const guestFile=document.getElementById('guestFile'),guestFilePreview=document.getElementById('guestFilePreview'),guestFileSendButton=document.getElementById('guestFileSendButton');
 const canvas=document.getElementById('canvas'),thumbCanvas=document.getElementById('thumbCanvas'),statusBox=document.getElementById('status'),instruction=document.getElementById('instruction'),resultPanel=document.getElementById('resultPanel');
 let currentStream=null,guestStream=null,capturedImage=null,thumbnailImage=null,lastSentImage=null,sending=false;
+let currentPhotoBlob=null,currentPhotoObjectUrl=null,currentPhotoFileName="foto.jpg";
 
 if(mode==='upload'){document.getElementById('boothMode').style.display='none';document.getElementById('uploadMode').style.display='block';document.getElementById('pageTitle').textContent='PARTECIPA AL MOSAICO';instruction.textContent='Scatta un selfie oppure carica una foto dal telefono';}else{document.getElementById('boothMode').style.display='block';}
 
@@ -109,12 +117,66 @@ function drawSquareImage(target,img,size,sx,sy,side){target.width=size;target.he
 function readFileAsDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.onerror=reject;r.readAsDataURL(file)})}
 function loadImage(src){return new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=src})}
 
-async function sendToServer(full,thumb,source){sending=true;setButtonsDisabled(true);statusBox.textContent='Invio foto...';try{const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({image:full,thumbnail:thumb,source})});const text=await response.text();let result;try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida da Apps Script.')}if(!result.success)throw new Error(result.error||'Errore durante il salvataggio.');lastSentImage=full;showResult();statusBox.textContent='Foto inviata al mosaico. ID: '+result.id;if(mode==='booth'){capturedImage=null;thumbnailImage=null;sendButton.style.display='none';retakeButton.style.display='none';startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto inviata correttamente'}else{stopGuestCamera();guestShootButton.style.display='none';guestRetakeButton.style.display='none';guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto inviata correttamente'}}catch(e){console.error(e);statusBox.textContent='Errore salvataggio: '+e.message}finally{sending=false;setButtonsDisabled(false)}}
+async function sendToServer(full,thumb,source){sending=true;setButtonsDisabled(true);statusBox.textContent='Invio foto...';try{const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({image:full,thumbnail:thumb,source})});const text=await response.text();let result;try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida da Apps Script.')}if(!result.success)throw new Error(result.error||'Errore durante il salvataggio.');lastSentImage=full;showResult(result);statusBox.textContent='Foto inviata al mosaico. ID: '+result.id;if(mode==='booth'){capturedImage=null;thumbnailImage=null;sendButton.style.display='none';retakeButton.style.display='none';startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto inviata correttamente'}else{stopGuestCamera();guestShootButton.style.display='none';guestRetakeButton.style.display='none';guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto inviata correttamente'}}catch(e){console.error(e);statusBox.textContent='Errore salvataggio: '+e.message}finally{sending=false;setButtonsDisabled(false)}}
 function setButtonsDisabled(v){sendButton.disabled=v;retakeButton.disabled=v;guestSendButton.disabled=v;guestRetakeButton.disabled=v;if(capturedImage)guestFileSendButton.disabled=v}
-function showResult(){resultPanel.style.display='block'}
+function imageDataToBlob(dataUrl){
+  const match=/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUrl||'');
+  if(!match)throw new Error('Formato foto non valido.');
+  const binary=atob(match[2]),bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  return new Blob([bytes],{type:match[1]});
+}
+function clearPhotoObjectUrl(){
+  if(currentPhotoObjectUrl)URL.revokeObjectURL(currentPhotoObjectUrl);
+  currentPhotoObjectUrl=null;currentPhotoBlob=null;
+}
+function safeSavedPhotoUrl(result){
+  // Use the deployed Apps Script photo page, not a Drive sharing URL or GitHub page.
+  const expected=new URL(APPS_SCRIPT_URL);
+  if(result.downloadUrl){
+    try{
+      const candidate=new URL(result.downloadUrl);
+      if(candidate.origin===expected.origin && candidate.pathname===expected.pathname &&
+        candidate.searchParams.get('action')==='download' && candidate.searchParams.get('id')===String(result.id))
+        return candidate.href;
+    }catch(e){}
+  }
+  if(!Number.isSafeInteger(Number(result.id))||Number(result.id)<1)return null;
+  expected.searchParams.set('action','download');expected.searchParams.set('id',String(result.id));
+  return expected.href;
+}
+function showResult(result){
+  clearPhotoObjectUrl();
+  currentPhotoBlob=imageDataToBlob(lastSentImage);
+  currentPhotoObjectUrl=URL.createObjectURL(currentPhotoBlob);
+  currentPhotoFileName=String(result.fileName||('photo_'+result.id+'.jpg')).replace(/[\/\\]/g,'_');
+  document.getElementById('resultPhoto').src=lastSentImage;
+  const link=document.getElementById('savedPhotoLink'),url=safeSavedPhotoUrl(result);
+  link.style.display=url?'inline-block':'none';
+  if(url)link.href=url;else link.removeAttribute('href');
+  let canShare=false;
+  try{canShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([currentPhotoBlob],currentPhotoFileName,{type:currentPhotoBlob.type})]}));}catch(e){}
+  document.getElementById('sharePhotoButton').style.display=canShare?'inline-block':'none';
+  document.getElementById('savePhotoHelp').textContent='Puoi scaricare la foto o tenere premuta l’anteprima per salvarla. Su iPhone puoi usare Salva / Condividi.';
+  resultPanel.style.display='block';
+}
 function hideResult(){resultPanel.style.display='none'}
-function downloadCurrentPhoto(){if(!lastSentImage){alert('Nessuna foto disponibile.');return}const a=document.createElement('a');a.href=lastSentImage;a.download='human-logo-photo-'+Date.now()+'.jpg';document.body.appendChild(a);a.click();a.remove()}
-function resetGuestMedia(){capturedImage=null;thumbnailImage=null;lastSentImage=null;hideResult();guestPreview.src='';guestPreview.style.display='none';guestFilePreview.src='';guestFilePreview.style.display='none';guestFile.value='';guestFileSendButton.disabled=true}
+function downloadCurrentPhoto(){
+  if(!currentPhotoObjectUrl){statusBox.textContent='Nessuna foto disponibile.';return}
+  const a=document.createElement('a');a.href=currentPhotoObjectUrl;a.download=currentPhotoFileName;
+  document.body.appendChild(a);a.click();a.remove();
+  document.getElementById('savePhotoHelp').textContent='Download richiesto. Se il browser mostra l’immagine, tienila premuta per salvarla oppure usa Salva / Condividi.';
+}
+async function shareCurrentPhoto(){
+  if(!currentPhotoBlob)return;
+  try{await navigator.share({files:[new File([currentPhotoBlob],currentPhotoFileName,{type:currentPhotoBlob.type})]});}
+  catch(e){if(e.name!=='AbortError')document.getElementById('savePhotoHelp').textContent='Salvataggio non disponibile: usa Scarica foto oppure tieni premuta l’anteprima.';}
+}
+window.addEventListener('pagehide',clearPhotoObjectUrl);
+window.addEventListener('pageshow',()=>{
+  if(lastSentImage&&!currentPhotoObjectUrl){currentPhotoBlob=imageDataToBlob(lastSentImage);currentPhotoObjectUrl=URL.createObjectURL(currentPhotoBlob);}
+});
+function resetGuestMedia(){capturedImage=null;thumbnailImage=null;lastSentImage=null;clearPhotoObjectUrl();document.getElementById('resultPhoto').removeAttribute('src');document.getElementById('savedPhotoLink').removeAttribute('href');hideResult();guestPreview.src='';guestPreview.style.display='none';guestFilePreview.src='';guestFilePreview.style.display='none';guestFile.value='';guestFileSendButton.disabled=true}
 function showCameraError(e){console.error(e);statusBox.textContent='Errore fotocamera: '+e.name+' - '+e.message}
 </script>
 </body>
