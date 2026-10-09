@@ -7,9 +7,13 @@
   <style>
     *{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif;background:#070a0f;color:#fff}body{min-height:100vh}.app{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}.header{text-align:center;margin-bottom:20px}h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px)}#instruction{margin:0;color:#aeb9c8;font-size:18px}.camera-box{position:relative;width:min(78vw,720px);aspect-ratio:4/3;background:#000;border:1px solid rgba(255,255,255,.1);border-radius:26px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}video,.preview-image{width:100%;height:100%;object-fit:cover}video{transform:scaleX(-1)}.preview-image{display:none}.face-guide{position:absolute;width:40%;aspect-ratio:1/1;border:4px solid rgba(255,255,255,.85);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px}.button{padding:17px 32px;border:0;border-radius:50px;background:#0da8ff;color:white;font-size:19px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center}.button.secondary{background:#202733}.button.white{background:white;color:#111}.button:disabled{opacity:.45}#shootButton,#sendButton,#retakeButton{display:none}#status{margin-top:14px;min-height:22px;color:#aeb9c8;text-align:center}.result-panel{display:none;width:min(92vw,720px);margin-top:18px;text-align:center}.result-panel .button{min-width:230px}.upload-mode{display:none;width:min(94vw,720px)}.choice-card{border:1px solid rgba(255,255,255,.09);border-radius:24px;background:#111722;padding:24px;text-align:center}.choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}.guest-selfie,.guest-upload{display:none;margin-top:20px}.guest-upload input{width:100%;padding:14px;margin:12px 0 18px;border:1px solid #313b4a;border-radius:12px;color:white;background:#0b0f16}#guestPreview{display:none}.guest-file-preview{display:none;width:min(100%,520px);aspect-ratio:1/1;object-fit:cover;border-radius:20px;margin:18px auto}#guestSendButton{display:none}@media(max-width:650px){.camera-box{width:94vw}.choice-actions{grid-template-columns:1fr}}
   #resultPhoto{display:block;width:min(100%,520px);height:auto;border-radius:20px;margin:0 auto 18px}.result-panel .buttons{align-items:center}#savedPhotoLink{display:none;color:white;margin:20px 0}#savePhotoHelp{color:#aeb9c8;line-height:1.5}#sharePhotoButton{display:none}
+  #uploadOverlay[hidden]{display:none!important}#uploadOverlay{position:fixed;inset:0;z-index:9999;background:rgba(7,10,15,.78);display:flex;align-items:center;justify-content:center;padding:24px}.upload-progress{background:#111722;border:1px solid #384354;border-radius:24px;padding:32px;text-align:center;max-width:380px;width:100%;box-shadow:0 20px 70px #0008}.upload-spinner{width:54px;height:54px;border:5px solid #ffffff30;border-top-color:#0da8ff;border-radius:50%;margin:0 auto 20px;animation:upload-spin .85s linear infinite}@keyframes upload-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.upload-spinner{animation-duration:2s}}#uploadOverlayText{line-height:1.5;margin:0}
   </style>
 </head>
 <body>
+<div id="uploadOverlay" hidden role="status" aria-live="polite" aria-atomic="true">
+  <div class="upload-progress"><div class="upload-spinner" aria-hidden="true"></div><p id="uploadOverlayText">Invio della foto al mosaico…</p></div>
+</div>
 <div class="app">
   <div class="header">
     <h1 id="pageTitle">HUMAN LOGO BOOTH</h1>
@@ -116,9 +120,73 @@ function drawSquareVideo(target,src,size,sx,sy,side,mirror){target.width=size;ta
 async function createSquareImagesFromFile(file){const data=await readFileAsDataUrl(file),img=await loadImage(data),side=Math.min(img.naturalWidth,img.naturalHeight),sx=(img.naturalWidth-side)/2,sy=(img.naturalHeight-side)/2;drawSquareImage(canvas,img,900,sx,sy,side);drawSquareImage(thumbCanvas,img,320,sx,sy,side);return{full:canvas.toDataURL('image/jpeg',.90),thumb:thumbCanvas.toDataURL('image/jpeg',.78)}}
 function drawSquareImage(target,img,size,sx,sy,side){target.width=size;target.height=size;target.getContext('2d').drawImage(img,sx,sy,side,side,0,0,size,size)}
 function readFileAsDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.onerror=reject;r.readAsDataURL(file)})}
-function loadImage(src){return new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=src})}
+function loadImage(src){return new Promise((resolve,reject)=>{const i=new Image();const timeout=setTimeout(()=>{i.onload=null;i.onerror=null;reject(new Error('Immagine non caricata entro 20 secondi.'));},20000);i.onload=()=>{clearTimeout(timeout);resolve(i)};i.onerror=()=>{clearTimeout(timeout);reject(new Error('Impossibile leggere l’immagine.'))};i.src=src})}
 
-async function sendToServer(full,thumb,source){sending=true;setButtonsDisabled(true);statusBox.textContent='Invio foto...';try{const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({image:full,thumbnail:thumb,source})});const text=await response.text();let result;try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida da Apps Script.')}if(!result.success)throw new Error(result.error||'Errore durante il salvataggio.');lastSentImage=full;showResult(result);statusBox.textContent='Foto inviata al mosaico. ID: '+result.id;if(mode==='booth'){capturedImage=null;thumbnailImage=null;sendButton.style.display='none';retakeButton.style.display='none';startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto inviata correttamente'}else{stopGuestCamera();guestShootButton.style.display='none';guestRetakeButton.style.display='none';guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto inviata correttamente'}}catch(e){console.error(e);statusBox.textContent='Errore salvataggio: '+e.message}finally{sending=false;setButtonsDisabled(false)}}
+function setUploadOverlay(active,message){
+  document.getElementById('uploadOverlay').hidden=!active;
+  document.getElementById('uploadOverlayText').textContent=message||'Invio della foto al mosaico…';
+  document.querySelector('.app').inert=active;
+  document.querySelector('.app').setAttribute('aria-busy',String(active));
+}
+async function prepareBrandedPhoto(full){
+  // Read the current brand setting for each send, including changes made in admin.
+  const url=new URL(APPS_SCRIPT_URL);url.searchParams.set('action','brandLogo');
+  url.searchParams.set('_',Date.now());
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+  let result;
+  try{
+    const response=await fetch(url.href,{signal:controller.signal,redirect:'follow'});
+    if(!response.ok)throw new Error('Logo del cliente non disponibile (HTTP '+response.status+').');
+    result=await response.json();
+  }catch(e){
+    throw new Error(e.name==='AbortError'?'Caricamento logo scaduto. Riprova.':'Impossibile caricare il logo del cliente: '+e.message);
+  }finally{clearTimeout(timeout)}
+  if(!result.success||!/^data:image\//.test(result.image||''))
+    throw new Error(result.error||'Logo del cliente non configurato.');
+  const [photo,logo]=await Promise.all([loadImage(full),loadImage(result.image)]);
+  if(!photo.naturalWidth||!logo.naturalWidth)throw new Error('Foto o logo non leggibile.');
+  const branded=document.createElement('canvas');branded.width=900;branded.height=900;
+  const ctx=branded.getContext('2d');
+  ctx.drawImage(photo,0,0,900,900);
+  // Brand footer baked into the JPEG, centered without stretching the logo.
+  const footerHeight=126,padding=16;
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,900-footerHeight,900,footerHeight);
+  const scale=Math.min(378/logo.naturalWidth,(footerHeight-2*padding)/logo.naturalHeight);
+  const width=logo.naturalWidth*scale,height=logo.naturalHeight*scale;
+  ctx.drawImage(logo,(900-width)/2,900-footerHeight+(footerHeight-height)/2,width,height);
+  return branded.toDataURL('image/jpeg',.92);
+}
+async function sendToServer(full,thumb,source){
+  if(sending)return;
+  sending=true;setButtonsDisabled(true);setUploadOverlay(true,'Preparazione della foto con il logo del cliente…');
+  statusBox.textContent='Preparazione foto…';
+  let controller=null,timeout=null;
+  try{
+    const brandedFull=await prepareBrandedPhoto(full);
+    setUploadOverlay(true,'Invio della foto al mosaico…');statusBox.textContent='Invio foto…';
+    controller=new AbortController();timeout=setTimeout(()=>controller.abort(),120000);
+    const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      signal:controller.signal,body:JSON.stringify({image:brandedFull,thumbnail:thumb,source})});
+    if(!response.ok)throw new Error('Il server ha risposto HTTP '+response.status+'.');
+    const text=await response.text();let result;
+    try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida da Apps Script.')}
+    if(!result.success)throw new Error(result.error||'Errore durante il salvataggio.');
+    lastSentImage=brandedFull;showResult(result);statusBox.textContent='Foto inviata al mosaico. ID: '+result.id;
+    if(mode==='booth'){
+      capturedImage=null;thumbnailImage=null;sendButton.style.display='none';retakeButton.style.display='none';
+      startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto inviata correttamente';
+    }else{
+      stopGuestCamera();guestShootButton.style.display='none';guestRetakeButton.style.display='none';
+      guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto inviata correttamente';
+    }
+  }catch(e){
+    console.error(e);
+    statusBox.textContent=e.name==='AbortError'?'Il server non ha confermato il salvataggio. Verifica il mosaico prima di inviare nuovamente la foto.':'Errore salvataggio: '+e.message;
+  }finally{
+    if(timeout)clearTimeout(timeout);
+    sending=false;setUploadOverlay(false);setButtonsDisabled(false);
+  }
+}
 function setButtonsDisabled(v){sendButton.disabled=v;retakeButton.disabled=v;guestSendButton.disabled=v;guestRetakeButton.disabled=v;if(capturedImage)guestFileSendButton.disabled=v}
 function imageDataToBlob(dataUrl){
   const match=/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=\s]+)$/.exec(dataUrl||'');
