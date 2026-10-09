@@ -8,6 +8,7 @@
     *{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;font-family:Arial,sans-serif;background:#070a0f;color:#fff}body{min-height:100vh}.app{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px}.header{text-align:center;margin-bottom:20px}h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px)}#instruction{margin:0;color:#aeb9c8;font-size:18px}.camera-box{position:relative;width:min(78vw,720px);aspect-ratio:4/3;background:#000;border:1px solid rgba(255,255,255,.1);border-radius:26px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.35)}video,.preview-image{width:100%;height:100%;object-fit:cover}video{transform:scaleX(-1)}.preview-image{display:none}.face-guide{position:absolute;width:40%;aspect-ratio:1/1;border:4px solid rgba(255,255,255,.85);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}.buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px}.button{padding:17px 32px;border:0;border-radius:50px;background:#0da8ff;color:white;font-size:19px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center}.button.secondary{background:#202733}.button.white{background:white;color:#111}.button:disabled{opacity:.45}#shootButton,#sendButton,#retakeButton{display:none}#status{margin-top:14px;min-height:22px;color:#aeb9c8;text-align:center}.result-panel{display:none;width:min(92vw,720px);margin-top:18px;text-align:center}.result-panel .button{min-width:230px}.upload-mode{display:none;width:min(94vw,720px)}.choice-card{border:1px solid rgba(255,255,255,.09);border-radius:24px;background:#111722;padding:24px;text-align:center}.choice-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}.guest-selfie,.guest-upload{display:none;margin-top:20px}.guest-upload input{width:100%;padding:14px;margin:12px 0 18px;border:1px solid #313b4a;border-radius:12px;color:white;background:#0b0f16}#guestPreview{display:none}.guest-file-preview{display:none;width:min(100%,520px);aspect-ratio:1/1;object-fit:cover;border-radius:20px;margin:18px auto}#guestSendButton{display:none}@media(max-width:650px){.camera-box{width:94vw}.choice-actions{grid-template-columns:1fr}}
   #resultPhoto{display:block;width:min(100%,520px);height:auto;border-radius:20px;margin:0 auto 18px}.result-panel .buttons{align-items:center}#savedPhotoLink{display:none;color:white;margin:20px 0}#savePhotoHelp{color:#aeb9c8;line-height:1.5}#sharePhotoButton{display:none}
   #uploadOverlay[hidden]{display:none!important}#uploadOverlay{position:fixed;inset:0;z-index:9999;background:rgba(7,10,15,.78);display:flex;align-items:center;justify-content:center;padding:24px}.upload-progress{background:#111722;border:1px solid #384354;border-radius:24px;padding:32px;text-align:center;max-width:380px;width:100%;box-shadow:0 20px 70px #0008}.upload-spinner{width:54px;height:54px;border:5px solid #ffffff30;border-top-color:#0da8ff;border-radius:50%;margin:0 auto 20px;animation:upload-spin .85s linear infinite}@keyframes upload-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.upload-spinner{animation-duration:2s}}#uploadOverlayText{line-height:1.5;margin:0}
+  .camera-choice{text-align:center;margin:0 0 18px}.camera-choice select{padding:12px 16px;margin-left:10px;border-radius:12px;border:1px solid #42516a;background:#111722;color:white;font-size:17px}#photoQrSection[hidden]{display:none!important}#photoQrSection{margin:24px auto 0;padding:22px;background:#fff;color:#111;border-radius:20px;width:min(100%,340px)}#photoQrCode{width:256px;height:256px;margin:16px auto;background:white}#photoQrCode img,#photoQrCode canvas{display:block;max-width:100%}#photoQrSection p{line-height:1.4}
   </style>
 </head>
 <body>
@@ -21,6 +22,11 @@
   </div>
 
   <div id="boothMode">
+    <div class="camera-choice"><label for="boothCameraChoice">Fotocamera</label>
+      <select id="boothCameraChoice" onchange="selectBoothCamera()">
+        <option value="environment">Posteriore iPad</option><option value="user">Frontale</option>
+      </select>
+    </div>
     <div class="camera-box">
       <video id="video" autoplay playsinline muted></video>
       <img id="previewImage" class="preview-image" alt="Anteprima foto">
@@ -72,6 +78,11 @@
   <div id="status"></div>
 
   <div id="resultPanel" class="result-panel">
+    <section id="photoQrSection" hidden>
+      <strong>SCARICA LA TUA FOTO</strong>
+      <div id="photoQrCode" aria-label="QR code del link alla foto salvata"></div>
+      <p id="photoQrHelp">Inquadra il QR code con il tuo telefono per aprire e scaricare la foto con il logo.</p>
+    </section>
     <img id="resultPhoto" alt="La tua foto inviata al mosaico">
     <div class="buttons">
       <button class="button white" onclick="downloadCurrentPhoto()">SCARICA FOTO</button>
@@ -86,6 +97,7 @@
   <canvas id="thumbCanvas" style="display:none"></canvas>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbwIQ4bP6RxXol5l0D-dPlgUIHKJw5Ctr4nn_utJz1mjGsZRDIoedZnvPUwnzrk1C2EybA/exec';
 const params=new URLSearchParams(location.search);const mode=params.get('mode')||'booth';
@@ -98,9 +110,36 @@ let currentPhotoBlob=null,currentPhotoObjectUrl=null,currentPhotoFileName="foto.
 
 if(mode==='upload'){document.getElementById('boothMode').style.display='none';document.getElementById('uploadMode').style.display='block';document.getElementById('pageTitle').textContent='PARTECIPA AL MOSAICO';instruction.textContent='Scatta un selfie oppure carica una foto dal telefono';}else{document.getElementById('boothMode').style.display='block';}
 
-async function startCamera(){hideResult();document.querySelector('#boothMode .camera-box').style.display='block';statusBox.textContent='Attivazione fotocamera...';try{currentStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1920},height:{ideal:1080}},audio:false});video.srcObject=currentStream;video.style.display='block';previewImage.style.display='none';faceGuide.style.display='block';startButton.style.display='none';shootButton.style.display='inline-block';sendButton.style.display='none';retakeButton.style.display='none';instruction.textContent='Posiziona il volto all’interno della guida';statusBox.textContent='';}catch(e){showCameraError(e)}}
+let boothCameraFacing='environment',boothCameraMirror=false,boothCameraStarting=false;
+try{const saved=localStorage.getItem('HLB_BOOTH_CAMERA');if(saved==='user'||saved==='environment')boothCameraFacing=saved;}catch(e){}
+document.getElementById('boothCameraChoice').value=boothCameraFacing;
+async function selectBoothCamera(){
+  if(sending||boothCameraStarting)return;
+  boothCameraFacing=document.getElementById('boothCameraChoice').value;
+  try{localStorage.setItem('HLB_BOOTH_CAMERA',boothCameraFacing)}catch(e){}
+  if(currentStream||capturedImage){capturedImage=null;thumbnailImage=null;await startCamera();}
+}
+async function startCamera(){
+  if(boothCameraStarting||sending)return;
+  boothCameraStarting=true;document.getElementById('boothCameraChoice').disabled=true;
+  hideResult();stopCamera();document.querySelector('#boothMode .camera-box').style.display='block';
+  shootButton.style.display='none';statusBox.textContent='Attivazione fotocamera…';
+  try{
+    currentStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:boothCameraFacing},width:{ideal:1920},height:{ideal:1080}},audio:false});
+    const track=currentStream.getVideoTracks()[0],settings=track.getSettings?track.getSettings():{};
+    boothCameraMirror=(settings.facingMode||boothCameraFacing)==='user';
+    video.style.transform=boothCameraMirror?'scaleX(-1)':'none';video.srcObject=currentStream;
+    video.style.display='block';previewImage.style.display='none';faceGuide.style.display='block';
+    startButton.style.display='none';shootButton.style.display='inline-block';sendButton.style.display='none';retakeButton.style.display='none';
+    instruction.textContent='Inquadra l’ospite all’interno della guida';statusBox.textContent='';
+  }catch(e){
+    stopCamera();startButton.style.display='inline-block';
+    if(e.name==='OverconstrainedError'||e.name==='NotFoundError')statusBox.textContent='Fotocamera selezionata non disponibile. Scegli un’altra fotocamera e premi Attiva fotocamera.';
+    else showCameraError(e);
+  }finally{boothCameraStarting=false;document.getElementById('boothCameraChoice').disabled=false;}
+}
 function stopCamera(){if(currentStream){currentStream.getTracks().forEach(t=>t.stop());currentStream=null}video.srcObject=null}
-function takePhoto(){if(!video.videoWidth||!video.videoHeight){statusBox.textContent='La fotocamera non è ancora pronta.';return}const set=createSquareImagesFromVideo(video,true);capturedImage=set.full;thumbnailImage=set.thumb;previewImage.src=capturedImage;stopCamera();video.style.display='none';previewImage.style.display='block';faceGuide.style.display='none';shootButton.style.display='none';retakeButton.style.display='inline-block';sendButton.style.display='inline-block';instruction.textContent='Ti piace questa foto?';statusBox.textContent=''}
+function takePhoto(){if(!video.videoWidth||!video.videoHeight){statusBox.textContent='La fotocamera non è ancora pronta.';return}const set=createSquareImagesFromVideo(video,boothCameraMirror);capturedImage=set.full;thumbnailImage=set.thumb;previewImage.src=capturedImage;stopCamera();video.style.display='none';previewImage.style.display='block';faceGuide.style.display='none';shootButton.style.display='none';retakeButton.style.display='inline-block';sendButton.style.display='inline-block';instruction.textContent='Ti piace questa foto?';statusBox.textContent=''}
 async function retakePhoto(){capturedImage=null;thumbnailImage=null;previewImage.src='';previewImage.style.display='none';sendButton.style.display='none';retakeButton.style.display='none';await startCamera()}
 async function sendPhoto(){if(!capturedImage||sending)return;await sendToServer(capturedImage,thumbnailImage,'booth')}
 
@@ -214,6 +253,18 @@ function safeSavedPhotoUrl(result){
   expected.searchParams.set('action','download');expected.searchParams.set('id',String(result.id));
   return expected.href;
 }
+function showPhotoQr(url){
+  const section=document.getElementById('photoQrSection'),box=document.getElementById('photoQrCode');
+  box.innerHTML='';section.hidden=mode==='upload'||!url;
+  if(section.hidden)return;
+  if(typeof QRCode==='undefined'){
+    document.getElementById('photoQrHelp').textContent='QR non disponibile. Usa il collegamento Apri la foto salvata qui sotto.';return;
+  }
+  try{
+    new QRCode(box,{text:url,width:256,height:256,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+    document.getElementById('photoQrHelp').textContent='Inquadra il QR code con il tuo telefono per aprire e scaricare la foto con il logo.';
+  }catch(e){document.getElementById('photoQrHelp').textContent='QR non disponibile. Usa il collegamento Apri la foto salvata qui sotto.';}
+}
 function showResult(result){
   clearPhotoObjectUrl();
   currentPhotoBlob=imageDataToBlob(lastSentImage);
@@ -223,6 +274,7 @@ function showResult(result){
   const link=document.getElementById('savedPhotoLink'),url=safeSavedPhotoUrl(result);
   link.style.display=url?'inline-block':'none';
   if(url)link.href=url;else link.removeAttribute('href');
+  showPhotoQr(url);
   let canShare=false;
   try{canShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([currentPhotoBlob],currentPhotoFileName,{type:currentPhotoBlob.type})]}));}catch(e){}
   document.getElementById('sharePhotoButton').style.display=canShare?'inline-block':'none';
@@ -239,7 +291,7 @@ function showResult(result){
   }
   resultPanel.style.display='block';
 }
-function hideResult(){resultPanel.style.display='none'}
+function hideResult(){resultPanel.style.display='none';document.getElementById('photoQrSection').hidden=true;document.getElementById('photoQrCode').innerHTML=''}
 function downloadCurrentPhoto(){
   if(!currentPhotoObjectUrl){statusBox.textContent='Nessuna foto disponibile.';return}
   const a=document.createElement('a');a.href=currentPhotoObjectUrl;a.download=currentPhotoFileName;
