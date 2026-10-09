@@ -74,6 +74,7 @@
       <button id="sharePhotoButton" class="button secondary" onclick="shareCurrentPhoto()">SALVA / CONDIVIDI</button>
     </div>
     <p id="savePhotoHelp" role="status" aria-live="polite">Puoi scaricare la foto o tenere premuta l’anteprima per salvarla.</p>
+    <div class="buttons"><button id="newGuestPhotoButton" class="button secondary" style="display:none" onclick="backToChoices()">NUOVA FOTO</button></div>
     <a id="savedPhotoLink" target="_blank" rel="noopener">APRI LA FOTO SALVATA</a>
   </div>
 
@@ -93,7 +94,7 @@ let currentPhotoBlob=null,currentPhotoObjectUrl=null,currentPhotoFileName="foto.
 
 if(mode==='upload'){document.getElementById('boothMode').style.display='none';document.getElementById('uploadMode').style.display='block';document.getElementById('pageTitle').textContent='PARTECIPA AL MOSAICO';instruction.textContent='Scatta un selfie oppure carica una foto dal telefono';}else{document.getElementById('boothMode').style.display='block';}
 
-async function startCamera(){hideResult();statusBox.textContent='Attivazione fotocamera...';try{currentStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1920},height:{ideal:1080}},audio:false});video.srcObject=currentStream;video.style.display='block';previewImage.style.display='none';faceGuide.style.display='block';startButton.style.display='none';shootButton.style.display='inline-block';sendButton.style.display='none';retakeButton.style.display='none';instruction.textContent='Posiziona il volto all’interno della guida';statusBox.textContent='';}catch(e){showCameraError(e)}}
+async function startCamera(){hideResult();document.querySelector('#boothMode .camera-box').style.display='block';statusBox.textContent='Attivazione fotocamera...';try{currentStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1920},height:{ideal:1080}},audio:false});video.srcObject=currentStream;video.style.display='block';previewImage.style.display='none';faceGuide.style.display='block';startButton.style.display='none';shootButton.style.display='inline-block';sendButton.style.display='none';retakeButton.style.display='none';instruction.textContent='Posiziona il volto all’interno della guida';statusBox.textContent='';}catch(e){showCameraError(e)}}
 function stopCamera(){if(currentStream){currentStream.getTracks().forEach(t=>t.stop());currentStream=null}video.srcObject=null}
 function takePhoto(){if(!video.videoWidth||!video.videoHeight){statusBox.textContent='La fotocamera non è ancora pronta.';return}const set=createSquareImagesFromVideo(video,true);capturedImage=set.full;thumbnailImage=set.thumb;previewImage.src=capturedImage;stopCamera();video.style.display='none';previewImage.style.display='block';faceGuide.style.display='none';shootButton.style.display='none';retakeButton.style.display='inline-block';sendButton.style.display='inline-block';instruction.textContent='Ti piace questa foto?';statusBox.textContent=''}
 async function retakePhoto(){capturedImage=null;thumbnailImage=null;previewImage.src='';previewImage.style.display='none';sendButton.style.display='none';retakeButton.style.display='none';await startCamera()}
@@ -158,6 +159,16 @@ function showResult(result){
   try{canShare=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([currentPhotoBlob],currentPhotoFileName,{type:currentPhotoBlob.type})]}));}catch(e){}
   document.getElementById('sharePhotoButton').style.display=canShare?'inline-block':'none';
   document.getElementById('savePhotoHelp').textContent='Puoi scaricare la foto o tenere premuta l’anteprima per salvarla. Su iPhone puoi usare Salva / Condividi.';
+  // After a successful send, show only the final photo and its save controls.
+  if(mode==='upload'){
+    document.getElementById('choiceCard').style.display='none';
+    document.getElementById('guestSelfie').style.display='none';
+    document.getElementById('guestUpload').style.display='none';
+    document.getElementById('newGuestPhotoButton').style.display='inline-block';
+  }else{
+    document.querySelector('#boothMode .camera-box').style.display='none';
+    document.getElementById('newGuestPhotoButton').style.display='none';
+  }
   resultPanel.style.display='block';
 }
 function hideResult(){resultPanel.style.display='none'}
