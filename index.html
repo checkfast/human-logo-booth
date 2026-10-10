@@ -195,28 +195,50 @@ async function prepareBrandedPhoto(full){
   ctx.drawImage(logo,(900-width)/2,900-footerHeight+(footerHeight-height)/2,width,height);
   return branded.toDataURL('image/jpeg',.92);
 }
+let pendingSubmission=null;
+async function submitWithRetries(full,thumb,source,info){
+  if(!pendingSubmission || pendingSubmission.image!==full || pendingSubmission.thumbnail!==thumb)
+    pendingSubmission={image:full,thumbnail:thumb,source,requestId:crypto.randomUUID()};
+  pendingSubmission.original=capturedImage;
+  const {original,...uploadPayload}=pendingSubmission;
+  const body=JSON.stringify(uploadPayload),deadline=Date.now()+600000;
+  let last='Nessuna conferma';
+  for(let attempt=1;attempt<=20 && Date.now()<deadline;attempt++){
+    setUploadOverlay(true,attempt===1?'Invio della foto al mosaico…':'Server occupato: nuovo tentativo '+attempt+'. Non chiudere la pagina.');
+    const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),45000);
+    let wait=0;
+    try{
+      const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},signal:abort.signal,body});
+      const text=await response.text();let result;
+      try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida dal server.');}
+      if(result.success){if(result.requestId!==pendingSubmission.requestId)throw new Error('Identificativo risposta non corrispondente.');pendingSubmission=null;return result;}
+      if(result.retryable===false){const error=new Error(result.error||'Invio rifiutato.');error.permanent=true;throw error;}
+      wait=Math.min(60,Number(result.retryAfterSeconds)||0);last=result.error||'Server occupato';
+    }catch(e){if(e.permanent){pendingSubmission=null;throw e;}last=e.message;}
+    finally{clearTimeout(timer);}
+    const delay=Math.min(30,Math.pow(2,Math.min(attempt,5)))+Math.random()*5;
+    await new Promise(resolve=>setTimeout(resolve,Math.max(wait,delay)*1000));
+  }
+  throw new Error('Nessuna conferma dopo i tentativi. Premi Invia per ritentare la stessa richiesta senza duplicarla. Dettaglio: '+last);
+}
 async function sendToServer(full,thumb,source){
   if(sending)return;
   sending=true;setButtonsDisabled(true);setUploadOverlay(true,'Preparazione della foto con il logo del cliente…');
   statusBox.textContent='Preparazione foto…';
   let controller=null,timeout=null;
   try{
-    const brandedFull=await prepareBrandedPhoto(full);
+    const info=await (await fetch(APPS_SCRIPT_URL+'?action=appInfo&_='+Date.now())).json();
+    if(!info.ready||info.uploadVersion!==3)throw new Error('Il servizio foto non è ancora pronto. Riprova tra poco.');
+    const brandedFull=pendingSubmission && pendingSubmission.original===full ? pendingSubmission.image : await prepareBrandedPhoto(full);
     setUploadOverlay(true,'Invio della foto al mosaico…');statusBox.textContent='Invio foto…';
-    controller=new AbortController();timeout=setTimeout(()=>controller.abort(),120000);
-    const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
-      signal:controller.signal,body:JSON.stringify({image:brandedFull,thumbnail:thumb,source})});
-    if(!response.ok)throw new Error('Il server ha risposto HTTP '+response.status+'.');
-    const text=await response.text();let result;
-    try{result=JSON.parse(text)}catch(e){throw new Error('Risposta non valida da Apps Script.')}
-    if(!result.success)throw new Error(result.error||'Errore durante il salvataggio.');
-    lastSentImage=brandedFull;showResult(result);statusBox.textContent='Foto inviata al mosaico. ID: '+result.id;
+    const result=await submitWithRetries(brandedFull,thumb,source,info);
+    lastSentImage=brandedFull;showResult(result);statusBox.textContent='Foto salvata. Il mosaico si aggiorna in background.';
     if(mode==='booth'){
       capturedImage=null;thumbnailImage=null;sendButton.style.display='none';retakeButton.style.display='none';
-      startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto inviata correttamente';
+      startButton.style.display='inline-block';startButton.textContent='NUOVA FOTO';instruction.textContent='Foto salvata correttamente';
     }else{
       stopGuestCamera();guestShootButton.style.display='none';guestRetakeButton.style.display='none';
-      guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto inviata correttamente';
+      guestSendButton.style.display='none';guestFileSendButton.disabled=true;instruction.textContent='Foto salvata correttamente';
     }
   }catch(e){
     console.error(e);
@@ -249,7 +271,9 @@ function safeSavedPhotoUrl(result){
         return candidate.href;
     }catch(e){}
   }
-  if(!Number.isSafeInteger(Number(result.id))||Number(result.id)<1)return null;
+  const validNumeric=Number.isSafeInteger(Number(result.id))&&Number(result.id)>0;
+  const validFile=/^file:[A-Za-z0-9_-]{10,200}$/.test(String(result.id));
+  if(!validNumeric&&!validFile)return null;
   expected.searchParams.set('action','download');expected.searchParams.set('id',String(result.id));
   return expected.href;
 }
@@ -307,7 +331,7 @@ window.addEventListener('pagehide',clearPhotoObjectUrl);
 window.addEventListener('pageshow',()=>{
   if(lastSentImage&&!currentPhotoObjectUrl){currentPhotoBlob=imageDataToBlob(lastSentImage);currentPhotoObjectUrl=URL.createObjectURL(currentPhotoBlob);}
 });
-function resetGuestMedia(){capturedImage=null;thumbnailImage=null;lastSentImage=null;clearPhotoObjectUrl();document.getElementById('resultPhoto').removeAttribute('src');document.getElementById('savedPhotoLink').removeAttribute('href');hideResult();guestPreview.src='';guestPreview.style.display='none';guestFilePreview.src='';guestFilePreview.style.display='none';guestFile.value='';guestFileSendButton.disabled=true}
+function resetGuestMedia(){pendingSubmission=null;capturedImage=null;thumbnailImage=null;lastSentImage=null;clearPhotoObjectUrl();document.getElementById('resultPhoto').removeAttribute('src');document.getElementById('savedPhotoLink').removeAttribute('href');hideResult();guestPreview.src='';guestPreview.style.display='none';guestFilePreview.src='';guestFilePreview.style.display='none';guestFile.value='';guestFileSendButton.disabled=true}
 function showCameraError(e){console.error(e);statusBox.textContent='Errore fotocamera: '+e.name+' - '+e.message}
 </script>
 </body>
